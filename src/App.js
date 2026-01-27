@@ -3,7 +3,7 @@ import "./App.css";
 
 
 function App() {
-  const [movies, setMovies] = useState([]);
+ 
   const [query, setQuery] = useState("");
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [favorites, setFavorites] = useState([]);
@@ -63,16 +63,7 @@ function App() {
         : [...prev, movie]
     );
   }
-  function loadDefaultMovies() {
-  fetch(`https://www.omdbapi.com/?s=popular&apikey=9eac46e9`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.Search) setMovies(data.Search);
-    });
-}
-useEffect(() => {
-  loadDefaultMovies();
-}, []);
+  
 
 function fetchRow(title, searchTerm, page = 1) {
   setRows(prev => ({
