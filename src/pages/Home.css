@@ -1,0 +1,93 @@
+/* Netflix-style colors */
+.homePage {
+  background-color: #111; /* dark background */
+  color: white;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+/* Header */
+.homeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  background-color: #111;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.homeHeader h1 {
+  font-size: 28px;
+  color: white;
+}
+
+.enterBtn {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: red;
+  color: white;
+  transition: background 0.3s;
+}
+
+.enterBtn:hover {
+  background-color: #b20710;
+}
+
+/* Banner */
+.homeBanner {
+  background: url('https://images.unsplash.com/photo-1517602302552-471fe67acf66?auto=format&fit=crop&w=1350&q=80') center/cover no-repeat;
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 40px;
+  text-shadow: 2px 2px 6px #000;
+}
+
+.homeBanner h2 {
+  font-size: 48px;
+  margin: 0;
+}
+
+.homeBanner p {
+  font-size: 20px;
+}
+
+/* Features section */
+.homeFeatures {
+  display: flex;
+  gap: 20px;
+  padding: 40px;
+  flex-wrap: wrap;
+}
+
+.featureCard {
+  flex: 1 1 250px;
+  background-color: #222;
+  border-radius: 8px;
+  padding: 20px;
+  transition: transform 0.3s;
+  cursor: pointer;
+}
+
+.featureCard:hover {
+  transform: scale(1.05);
+  background-color: #333;
+}
+
+.featureCard h3 {
+  margin-top: 0;
+  color: white;
+}
+
+.featureCard p {
+  color: #ccc;
+}
+

@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import "../App.css";
+import React, { useState, useEffect, useRef } from "react";
+import "./Movies.css";
+import noPoster from "../assets/noPoster.png";
 
-const API_KEY = "9eac46e9"; // 🔥 PUT YOUR KEY HERE
-const FALLBACK_IMG = "/noPoster.png"; // put this image in PUBLIC folder
-
-function Movies() {
-  const [selectedMovie, setSelectedMovie] = useState(null);
-  const [favorites, setFavorites] = useState([]);
+function Movies({ goHome }) {
   const [rows, setRows] = useState({});
+  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [query, setQuery] = useState("");
+  const rowRefs = useRef({}); // store row DOM refs
 
-  /* 🎬 FETCH MOVIE ROW */
+  const API = "https://www.omdbapi.com/?apikey=9eac46e9";
+
   function fetchRow(title, searchTerm, page = 1) {
     setRows(prev => ({
       ...prev,
       [title]: { ...prev[title], loading: true }
     }));
 
-    fetch(`https://www.omdbapi.com/?s=${searchTerm}&page=${page}&apikey=${API_KEY}`)
+    fetch(`${API}&s=${searchTerm}&page=${page}`)
       .then(res => res.json())
       .then(data => {
         setRows(prev => ({
@@ -28,17 +27,47 @@ function Movies() {
                 ? [...prev[title].movies, ...data.Search]
                 : data.Search
               : [],
+            loading: false,
             page,
-            searchTerm,
-            loading: false
+            searchTerm
           }
         }));
       });
   }
 
-  /* 🎥 MODAL OPEN */
-  function openModal(imdbID) {
-    fetch(`https://www.omdbapi.com/?i=${imdbID}&apikey=${API_KEY}`)
+  useEffect(() => {
+    fetchRow("🔥 Popular", "avengers");
+    fetchRow("💥 Action", "mission");
+    fetchRow("😂 Comedy", "funny");
+    fetchRow("🎭 Drama", "love");
+  }, []);
+
+  function searchMovies() {
+    if (!query) return;
+    fetchRow("🔎 Search Results", query);
+  }
+
+  function handleScrollLoad(e, title) {
+    const el = e.target;
+    const row = rows[title];
+    if (!row || row.loading) return;
+
+    if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 50) {
+      fetchRow(title, row.searchTerm, row.page + 1);
+    }
+  }
+
+  function scrollRow(title, direction) {
+    const el = rowRefs.current[title];
+    if (!el) return;
+    el.scrollBy({
+      left: direction === "left" ? -500 : 500,
+      behavior: "smooth"
+    });
+  }
+
+  function openModal(id) {
+    fetch(`${API}&i=${id}`)
       .then(res => res.json())
       .then(data => setSelectedMovie(data));
   }
@@ -47,137 +76,103 @@ function Movies() {
     setSelectedMovie(null);
   }
 
-  /* ❤️ FAVORITES */
-  function toggleFavorite(movie) {
-    setFavorites(prev =>
-      prev.find(m => m.imdbID === movie.imdbID)
-        ? prev.filter(m => m.imdbID !== movie.imdbID)
-        : [...prev, movie]
-    );
-  }
-
-  function isFavorite(id) {
-    return favorites.some(m => m.imdbID === id);
-  }
-
-  /* 🚀 INITIAL LOAD */
-  useEffect(() => {
-    fetchRow("Popular", "avengers");
-    fetchRow("Action", "mission");
-    fetchRow("Comedy", "funny");
-    fetchRow("Drama", "love");
-  }, []);
-
-  /* 🔁 INFINITE SCROLL */
-  function handleScroll(e, title) {
-    const el = e.target;
-    const row = rows[title];
-    if (!row || row.loading) return;
-
-    if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 5) {
-      fetchRow(title, row.searchTerm, row.page + 1);
-    }
-  }
+  // Determine the order: Search row first if query exists
+  const rowTitles = [];
+  if (query && rows["🔎 Search Results"]) rowTitles.push("🔎 Search Results");
+  Object.keys(rows).forEach(title => {
+    if (title !== "🔎 Search Results") rowTitles.push(title);
+  });
 
   return React.createElement(
     "div",
-    { className: "container" },
+    { className: "moviesPage" },
 
-    /* HEADER */
+    React.createElement("button", { className: "backBtn", onClick: goHome }, "← Home"),
+
+    // 🔍 SEARCH BAR
     React.createElement(
       "div",
-      { className: "header" },
-      React.createElement("h1", null, "🎬 Movies"),
-      React.createElement(
-        Link,
-        { to: "/" },
-        React.createElement("button", { className: "backBtn" }, "⬅ Home")
-      )
+      { className: "searchBar" },
+      React.createElement("input", {
+        value: query,
+        onChange: e => setQuery(e.target.value),
+        placeholder: "Search for movies..."
+      }),
+      React.createElement("button", { onClick: searchMovies }, "Search")
     ),
 
-    /* MOVIE ROWS */
-    Object.keys(rows).map(title =>
+    // 🎞 MOVIE ROWS
+    rowTitles.map(title =>
       React.createElement(
         "div",
-        { key: title, className: "rowSection" },
+        { key: title, className: "rowWrapper" },
 
-        React.createElement("h2", null, title),
+        React.createElement("h2", { className: "rowTitle" }, title),
 
         React.createElement(
           "div",
-          {
-            className: "rowGrid",
-            onScroll: e => handleScroll(e, title)
-          },
+          { className: "rowContainer" },
 
-          rows[title]?.movies?.map(movie =>
-            React.createElement(
-              "div",
-              { key: movie.imdbID, className: "card" },
+          // ⬅ LEFT BUTTON
+          React.createElement(
+            "button",
+            { className: "scrollBtn left", onClick: () => scrollRow(title, "left") },
+            "❮"
+          ),
 
-              React.createElement(
-                "button",
-                {
-                  className: "favBtn",
-                  onClick: () => toggleFavorite(movie)
-                },
-                isFavorite(movie.imdbID) ? "❤️" : "🤍"
-              ),
-
+          // 🎬 MOVIE ROW
+          React.createElement(
+            "div",
+            {
+              className: "movieRow",
+              ref: el => (rowRefs.current[title] = el),
+              onScroll: e => handleScrollLoad(e, title)
+            },
+            rows[title].movies?.map(movie =>
               React.createElement(
                 "div",
-                { onClick: () => openModal(movie.imdbID) },
-
+                {
+                  key: movie.imdbID,
+                  className: "movieCard",
+                  onClick: () => openModal(movie.imdbID)
+                },
                 React.createElement("img", {
-                  src:
-                    movie.Poster && movie.Poster !== "N/A"
-                      ? movie.Poster
-                      : FALLBACK_IMG,
-                  alt: movie.Title,
-                  onError: e => (e.target.src = FALLBACK_IMG)
-                }),
-
-                React.createElement("p", null, movie.Title)
+                  src: movie.Poster && movie.Poster !== "N/A" ? movie.Poster : noPoster,
+                  onError: e => (e.target.src = noPoster),
+                  alt: movie.Title
+                })
               )
-            )
+            ),
+            rows[title].loading &&
+              React.createElement("div", { className: "loading" }, "Loading...")
+          ),
+
+          // ➡ RIGHT BUTTON
+          React.createElement(
+            "button",
+            { className: "scrollBtn right", onClick: () => scrollRow(title, "right") },
+            "❯"
           )
         )
       )
     ),
 
-    /* 🎥 MODAL */
+    // 🎬 MODAL
     selectedMovie &&
       React.createElement(
         "div",
         { className: "modalOverlay", onClick: closeModal },
-
         React.createElement(
           "div",
-          {
-            className: "modal",
-            onClick: e => e.stopPropagation()
-          },
-
+          { className: "modal", onClick: e => e.stopPropagation() },
+          React.createElement("h2", null, selectedMovie.Title),
           React.createElement("img", {
-            src:
-              selectedMovie.Poster && selectedMovie.Poster !== "N/A"
-                ? selectedMovie.Poster
-                : FALLBACK_IMG,
-            alt: selectedMovie.Title,
-            onError: e => (e.target.src = FALLBACK_IMG)
+            src: selectedMovie.Poster && selectedMovie.Poster !== "N/A" ? selectedMovie.Poster : noPoster,
+            onError: e => (e.target.src = noPoster),
+            alt: selectedMovie.Title
           }),
-
-          React.createElement(
-            "div",
-            { className: "modalContent" },
-            React.createElement("h2", null, selectedMovie.Title),
-            React.createElement("p", null, selectedMovie.Plot),
-            React.createElement(
-              "button",
-              { onClick: closeModal },
-              "Close"
-            )
-          )
+          React.createElement("p", null, selectedMovie.Plot),
+          React.createElement("button", { onClick: closeModal }, "Close")
         )
       )
   );
